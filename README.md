@@ -73,7 +73,7 @@ The following are the hardware specifications we use in production:
 > [!NOTE]
 To run the node using a supported client, you can use the following command:
 `CLIENT=supported_client docker compose up --build`
- 
+
 Supported clients:
  - reth (runs vanilla node by default, Flashblocks mode enabled by providing RETH_FB_WEBSOCKET_URL, see [Reth Node README](./reth/README.md))
  - geth
