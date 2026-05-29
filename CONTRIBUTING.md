@@ -54,3 +54,6 @@ All support requests must be made via [our support team][3].
 [2]: https://medium.com/brigade-engineering/the-secrets-to-great-commit-messages-106fc0a92a25
 [3]: https://support.coinbase.com/customer/en/portal/articles/2288496-how-can-i-contact-coinbase-support-
 
+
+## Contributors
+- Documentation improvements (2026)
