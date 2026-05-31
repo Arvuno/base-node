@@ -136,7 +136,68 @@ Snapshots are available to help you sync your node more quickly. See [docs.base.
 
 ## Troubleshooting
 
-For support please join our [Discord](https://discord.gg/buildonbase) post in `🛠｜node-operators`. You can alternatively open a new GitHub issue.
+This section covers common issues when setting up and running a Base node. For more detailed guides, see the [Troubleshooting guide on docs.base.org](https://docs.base.org/base-chain/node-operators/troubleshooting).
+
+### Node Won't Start
+
+- **Check Docker is running**: Ensure the Docker daemon is running (`docker info`).
+- **Verify environment config**: Confirm L1 endpoints are set correctly in `.env.mainnet` or `.env.sepolia`. Missing or incorrect `OP_NODE_L1_ETH_RPC` or `OP_NODE_L1_BEACON` will cause startup failures.
+- **Check port availability**: Ensure ports `8545`, `8546`, `8551`, `6060`, `7545`, and `30303` are not in use by other services:
+  ```bash
+  sudo lsof -i -P -n | grep LISTEN
+  ```
+- **JWT secret errors**: If you see authentication errors between `op-node` and the execution client, ensure `OP_NODE_L2_ENGINE_AUTH` is correctly set. The docker-compose setup handles this automatically — don't manually modify unless instructed.
+- **Permission issues**: If using `sudo` with Docker, you may encounter permission issues with data directories. Try running as a non-root user added to the `docker` group.
+
+### Syncing Is Stuck
+
+- **Check L1 node health**: Your L1 node must be fully synced and accessible. Check your `OP_NODE_L1_ETH_RPC` is responding:
+  ```bash
+  curl -d '{"id":0,"jsonrpc":"2.0","method":"eth_blockNumber","params":[]}' \
+    -H "Content-Type: application/json" <your-l1-rpc-url>
+  ```
+- **Monitor sync progress**: Check `optimism_syncStatus` on port `7545`:
+  ```bash
+  curl -d '{"id":0,"jsonrpc":"2.0","method":"optimism_syncStatus"}' \
+    -H "Content-Type: application/json" http://localhost:7545
+  ```
+- **Check system time**: Ensure the server clock is synchronized using `ntp` or `chrony`. Time drift can cause P2P sync issues.
+- **Review logs**: Check both containers for errors:
+  ```bash
+  docker compose logs -f execution
+  docker compose logs -f node
+  ```
+
+### Consensus Client Fails
+
+- **Reth fails to start**: Check `RETH_CHAIN` matches your network (`base` or `base-sepolia`). Verify `RETH_SEQUENCER_HTTP` is set correctly.
+- **Engine API connection errors**: Ensure JWT authentication is working. The `op-node` connects to the execution client on port `8551` via Engine API.
+- **Out of memory**: Reth requires significant RAM. Ensure you meet the [minimum requirements](#requirements) — 32GB RAM minimum, 64GB recommended.
+- **Database corruption**: If Reth fails with database errors, you may need to re-sync from a snapshot. See [Snapshots](#snapshots).
+
+### P2P / Networking Issues
+
+- **Node has no peers**: Ensure your firewall allows:
+  - **Ingress**: TCP/UDP on ports `30303` and `9222`
+  - **Egress**: TCP/UDP on ports `30301`, `30303`, `9200`, and `9222`
+  If outbound to bootnodes is blocked, your node cannot discover peers.
+- **Behind NAT**: If the node is behind NAT, configure external IP via `ADDITIONAL_ARGS` in your `.env`:
+  ```
+  ADDITIONAL_ARGS="--nat=extip:<your-external-ip>"
+  ```
+- **Low peer count**: Check logs for P2P errors. If peers are low, verify all required ports are open in both directions.
+
+### Snapshot Restore Fails
+
+- **Download corruption**: Verify the download URL and retry. Check available disk space — extraction requires significantly more space than the download.
+- **Wrong data location**: After extraction, ensure chain data is directly in `./reth-data/`, not in a nested subfolder (e.g., not `./reth-data/reth/db/`).
+- **Container not stopped**: Always run `docker compose down` before manually modifying data directories.
+
+### Getting Help
+
+For additional support:
+- **Discord**: Join the [Base Discord](https://discord.gg/buildonbase) and post in `🛠｜node-operators`
+- **GitHub Issues**: [Open an issue](https://github.com/base/node/issues) if you suspect a bug
 
 ## Disclaimer
 
